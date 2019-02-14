@@ -22,6 +22,7 @@ import sys
 
 import carla
 
+from Scenarios.challenge_basic import *
 from Scenarios.follow_leading_vehicle import *
 from Scenarios.opposite_vehicle_taking_priority import *
 from Scenarios.object_crash_vehicle import *
@@ -45,7 +46,8 @@ SCENARIOS = {
     "RunningRedLight": RUNNING_RED_LIGHT_SCENARIOS,
     "NoSignalJunction": NO_SIGNAL_JUNCTION_SCENARIOS,
     "VehicleTurning": VEHICLE_TURNING_SCENARIOS,
-    "ControlLoss": CONTROL_LOSS_SCENARIOS
+    "ControlLoss": CONTROL_LOSS_SCENARIOS,
+    "ChallengeBasic": CHALLENGE_BASIC_SCENARIOS
 }
 
 
