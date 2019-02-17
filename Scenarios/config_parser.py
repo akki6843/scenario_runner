@@ -155,7 +155,6 @@ def find_scenario_config(scenario_name):
     """
     Parse *all* config files and find first match for scenario config
     """
-
     list_of_config_files = glob.glob("Configs/*.xml")
 
     for file_name in list_of_config_files:
