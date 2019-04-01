@@ -141,11 +141,13 @@ class DynamicObjectCrossing(BasicScenario):
         # ego vehicle parameters
         self._ego_vehicle_distance_driven = 40
         # other vehicle parameters
-        self._other_actor_target_velocity = 5
+        self._other_actor_target_velocity = 10
         self._other_actor_max_brake = 1.0
         self._time_to_reach = 12
         self._adversary_type = adversary_type  # flag to select either pedestrian (true) or cyclist (false)
         self._walker_yaw = 0
+
+        self._num_lane_changes = 2
 
         super(DynamicObjectCrossing, self).__init__("Dynamicobjectcrossing",
                                                     ego_vehicle,
@@ -158,12 +160,24 @@ class DynamicObjectCrossing(BasicScenario):
         """
         Custom initialization
         """
+        _current_lane_info = self.ego_vehicle.get_world().get_map().get_waypoint(self.ego_vehicle.get_location())
+        _new_lane = _current_lane_info.get_right_lane()
+
+        while(True):
+            print(_new_lane.lane_type)
+            if(str(_new_lane.lane_type) == 'Driving'):
+                _new_lane = _new_lane.get_right_lane()
+                self._num_lane_changes += 11
+            else:
+                break
+
         # cyclist transform
         _start_distance = 40
-        lane_width = self._reference_waypoint.lane_width
-        location, _ = get_location_in_distance_from_wp(self._reference_waypoint, _start_distance)
-        waypoint = self._wmap.get_waypoint(location)
-        offset = {"orientation": 270, "position": 90, "z": 0.4, "k": 1.1}
+        lane_width = _new_lane.lane_width
+        wp, _ = get_waypoint_in_distance(_new_lane, _start_distance)
+        _location = wp.transform.location
+        waypoint = self._wmap.get_waypoint(_location)
+        offset = {"orientation": 270, "position": 90, "z": 0.2, "k": 1.1}
         position_yaw = waypoint.transform.rotation.yaw + offset['position']
         orientation_yaw = waypoint.transform.rotation.yaw + offset['orientation']
         offset_location = carla.Location(
@@ -204,17 +218,19 @@ class DynamicObjectCrossing(BasicScenario):
         """
 
         lane_width = self.ego_vehicle.get_world().get_map().get_waypoint(self.ego_vehicle.get_location()).lane_width
-        lane_width = lane_width + (1.25 * lane_width)
+        lane_width = lane_width+(1.25*lane_width * self._num_lane_changes)
 
         # leaf nodes
-        start_condition = InTimeToArrivalToVehicle(self.other_actors[0], self.ego_vehicle, self._time_to_reach)
-        actor_velocity = KeepVelocity(self.other_actors[0], self._other_actor_target_velocity, self._walker_yaw)
-        actor_drive = DriveDistance(self.other_actors[0], 0.4 * lane_width)
+        start_condition = InTimeToArrivalToVehicle(
+            self.other_actors[0], self.ego_vehicle, self._time_to_reach * self._num_lane_changes)
+        actor_velocity = KeepVelocity(
+            self.other_actors[0], self._other_actor_target_velocity * lane_width, self._walker_yaw)
+        actor_drive = DriveDistance(self.other_actors[0], 0.5*lane_width)
         actor_start_cross_lane = AccelerateToVelocity(self.other_actors[0], 1.0,
                                                       self._other_actor_target_velocity, self._walker_yaw)
         actor_cross_lane = DriveDistance(self.other_actors[0], lane_width)
         actor_stop_crossed_lane = StopVehicle(self.other_actors[0], self._other_actor_max_brake)
-        timeout_other_actor = TimeOut(15)
+        timeout_other_actor = TimeOut(1)
         actor_remove = ActorDestroy(self.other_actors[0])
         static_remove = ActorDestroy(self.other_actors[1])
         end_condition = DriveDistance(self.ego_vehicle, self._ego_vehicle_distance_driven)
