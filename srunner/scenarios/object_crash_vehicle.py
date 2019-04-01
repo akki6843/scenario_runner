@@ -164,10 +164,9 @@ class DynamicObjectCrossing(BasicScenario):
         _new_lane = _current_lane_info.get_right_lane()
 
         while(True):
-            print(_new_lane.lane_type)
             if(str(_new_lane.lane_type) == 'Driving'):
                 _new_lane = _new_lane.get_right_lane()
-                self._num_lane_changes += 11
+                self._num_lane_changes += 1
             else:
                 break
 
