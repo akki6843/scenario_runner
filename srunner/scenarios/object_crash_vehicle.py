@@ -144,7 +144,7 @@ class DynamicObjectCrossing(BasicScenario):
         self._other_actor_target_velocity = 10
         self._other_actor_max_brake = 1.0
         self._time_to_reach = 12
-        self._adversary_type = adversary_type  # flag to select either pedestrian (true) or cyclist (false)
+        self._adversary_type = adversary_type  # flag to select either pedestrian (False) or cyclist (True)
         self._walker_yaw = 0
 
         self._num_lane_changes = 2
@@ -189,10 +189,14 @@ class DynamicObjectCrossing(BasicScenario):
         if self._adversary_type is False:
             walker = CarlaActorPool.request_new_actor('walker.*', transform)
             self._walker_yaw = orientation_yaw
-            self._other_actor_target_velocity = 2
+            self._other_actor_target_velocity = 3
+            # walker.set_simulate_physics(True)
             self.other_actors.append(walker)
         else:
+            self._other_actor_target_velocity = 9 + self._num_lane_changes
+            # self._time_to_reach = self._time_to_reach * self._num_lane_changes * 1.25
             first_vehicle = CarlaActorPool.request_new_actor('vehicle.diamondback.century', transform)
+            first_vehicle.set_simulate_physics(True)
             self.other_actors.append(first_vehicle)
         # static object transform
         shift = 0.9
@@ -205,7 +209,6 @@ class DynamicObjectCrossing(BasicScenario):
 
         transform2 = carla.Transform(carla.Location(x_static, y_static, transform.location.z + 0.01))
         static = CarlaActorPool.request_new_actor('static.prop.vendingmachine', transform2)
-        static.set_simulate_physics(True)
         self.other_actors.append(static)
 
     def _create_behavior(self):
@@ -221,9 +224,9 @@ class DynamicObjectCrossing(BasicScenario):
 
         # leaf nodes
         start_condition = InTimeToArrivalToVehicle(
-            self.other_actors[0], self.ego_vehicle, self._time_to_reach * self._num_lane_changes)
+            self.other_actors[0], self.ego_vehicle, self._time_to_reach)
         actor_velocity = KeepVelocity(
-            self.other_actors[0], self._other_actor_target_velocity * lane_width, self._walker_yaw)
+            self.other_actors[0], self._other_actor_target_velocity, self._walker_yaw)
         actor_drive = DriveDistance(self.other_actors[0], 0.5*lane_width)
         actor_start_cross_lane = AccelerateToVelocity(self.other_actors[0], 1.0,
                                                       self._other_actor_target_velocity, self._walker_yaw)
