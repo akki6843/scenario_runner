@@ -161,11 +161,12 @@ class DynamicObjectCrossing(BasicScenario):
         Custom initialization
         """
         _current_lane_info = self.ego_vehicle.get_world().get_map().get_waypoint(self.ego_vehicle.get_location())
-
+        print(_current_lane_info.lane_type)
         if(str(_current_lane_info.lane_type) == 'Driving'):
             _new_lane = _current_lane_info.get_right_lane()
             while(True):
-                if(str(_new_lane.lane_type) == 'Driving'):
+                print(self._num_lane_changes, _new_lane.lane_type)
+                if((str(_new_lane.lane_type) == 'Driving') or (str(_new_lane.lane_type) == 'Parking')):
                     _new_lane = _new_lane.get_right_lane()
                     self._num_lane_changes += 1
                 else:
