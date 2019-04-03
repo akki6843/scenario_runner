@@ -141,13 +141,13 @@ class DynamicObjectCrossing(BasicScenario):
         # ego vehicle parameters
         self._ego_vehicle_distance_driven = 40
         # other vehicle parameters
-        self._other_actor_target_velocity = 10
+        self._other_actor_target_velocity = 5
         self._other_actor_max_brake = 1.0
-        self._time_to_reach = 12
+        self._time_to_reach = 10
         self._adversary_type = adversary_type  # flag to select either pedestrian (False) or cyclist (True)
         self._walker_yaw = 0
 
-        self._num_lane_changes = 2
+        self._num_lane_changes = 1
 
         super(DynamicObjectCrossing, self).__init__("Dynamicobjectcrossing",
                                                     ego_vehicle,
@@ -161,22 +161,24 @@ class DynamicObjectCrossing(BasicScenario):
         Custom initialization
         """
         _current_lane_info = self.ego_vehicle.get_world().get_map().get_waypoint(self.ego_vehicle.get_location())
-        _new_lane = _current_lane_info.get_right_lane()
 
-        while(True):
-            if(str(_new_lane.lane_type) == 'Driving'):
-                _new_lane = _new_lane.get_right_lane()
-                self._num_lane_changes += 1
-            else:
-                break
+        if(str(_current_lane_info.lane_type) == 'Driving'):
+            _new_lane = _current_lane_info.get_right_lane()
+            while(True):
+                if(str(_new_lane.lane_type) == 'Driving'):
+                    _new_lane = _new_lane.get_right_lane()
+                    self._num_lane_changes += 1
+                else:
+                    break
+        else:
+            _new_lane = _current_lane_info
 
         # cyclist transform
         _start_distance = 40
         lane_width = _new_lane.lane_width
-        wp, _ = get_waypoint_in_distance(_new_lane, _start_distance)
-        _location = wp.transform.location
-        waypoint = self._wmap.get_waypoint(_location)
-        offset = {"orientation": 270, "position": 90, "z": 0.2, "k": 1.1}
+        location, _ = get_location_in_distance_from_wp(_new_lane, _start_distance)
+        waypoint = self._wmap.get_waypoint(location)
+        offset = {"orientation": 270, "position": 90, "z": 0.4, "k": 1.5}
         position_yaw = waypoint.transform.rotation.yaw + offset['position']
         orientation_yaw = waypoint.transform.rotation.yaw + offset['orientation']
         offset_location = carla.Location(
@@ -189,14 +191,12 @@ class DynamicObjectCrossing(BasicScenario):
         if self._adversary_type is False:
             walker = CarlaActorPool.request_new_actor('walker.*', transform)
             self._walker_yaw = orientation_yaw
-            self._other_actor_target_velocity = 3
-            # walker.set_simulate_physics(True)
+            self._other_actor_target_velocity = 2
             self.other_actors.append(walker)
         else:
-            self._other_actor_target_velocity = 9 + self._num_lane_changes
-            # self._time_to_reach = self._time_to_reach * self._num_lane_changes * 1.25
+            self._time_to_reach *= self._num_lane_changes
+            self._other_actor_target_velocity = self._other_actor_target_velocity * self._num_lane_changes
             first_vehicle = CarlaActorPool.request_new_actor('vehicle.diamondback.century', transform)
-            first_vehicle.set_simulate_physics(True)
             self.other_actors.append(first_vehicle)
         # static object transform
         shift = 0.9
